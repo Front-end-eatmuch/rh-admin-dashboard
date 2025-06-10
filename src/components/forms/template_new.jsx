@@ -1,0 +1,240 @@
+import React, { Component } from "react";
+import {
+  Drawer,
+  Form,
+  Button,
+  Col,
+  Row,
+  Input,
+  Select,
+  DatePicker,
+  notification,
+  Space,
+  Spin
+} from "antd";
+import { PlusOutlined } from "@ant-design/icons";
+import "../styles/general.css";
+
+import { MakeRequestAsync } from "../functions/axios";
+import { POST } from "../constants/request-type";
+import { service_api } from "../constants/url";
+import { template, create_template } from "../constants/routes";
+import { openNotificationWithIcon } from "../functions/notification";
+import { raw_menu } from "../constants/raw-list";
+import { uploadFile } from "../functions/upload-file";
+
+const { TextArea } = Input;
+const token = sessionStorage.getItem("auth_token");
+
+const { Option } = Select;
+
+class Template_new extends Component {
+  state = {
+    visible: false,
+    name: "",
+    eng_name: "",
+    description: "",
+    eng_description: "",
+    locked: false,
+    load: false
+  };
+
+  componentDidMount() {}
+  handleChange = (e) => {
+    this.setState({ [e.target.name]: e.target.value });
+  };
+
+  handleImageChange = (e) => {
+    e.preventDefault();
+    return this.setState({ icon: e.target.files[0] });
+  };
+  handleSubmit = async (e) => {
+    e.preventDefault();
+    this.setState({ load: true });
+
+    const { name, eng_name, description, eng_description } = this.state;
+
+    const data = {
+      name: name.toLowerCase(),
+      description: description
+    };
+
+    // console.log(token);
+
+    const request_details = {
+      type: POST,
+      url: service_api,
+      route: template + "/" + create_template,
+      data: {
+        ...data
+      },
+      token: token
+    };
+
+    if (data.name.length === 0) {
+      this.setState({ load: false });
+      return openNotificationWithIcon(
+        "error",
+        "Vous devez remplir tous les champs"
+      );
+    }
+
+    if (data.description.length === 0) {
+      this.setState({ load: false });
+      return openNotificationWithIcon(
+        "error",
+        "La valeur et le nombre d'utilisation doit être plus grand que zéro"
+      );
+    }
+
+    const response = await MakeRequestAsync(request_details).catch((err) => {
+      console.log(err);
+      this.setState({ load: false });
+      return openNotificationWithIcon("error", err);
+    });
+
+    return setTimeout(() => window.location.reload(), 0);
+  };
+
+  showDrawer = () => {
+    this.setState({
+      visible: true
+    });
+  };
+
+  onClose = () => {
+    this.setState({
+      visible: false
+    });
+  };
+
+  render() {
+    const { name, eng_name, description, eng_description, load } = this.state;
+    return (
+      <>
+        <Button type="primary" onClick={this.showDrawer}>
+          <PlusOutlined /> Ajouter
+        </Button>
+        <Drawer
+          title="Ajouter un modèle"
+          width={720}
+          onClose={this.onClose}
+          visible={this.state.visible}
+          bodyStyle={{ paddingBottom: 80 }}
+          footer={
+            <div
+              style={{
+                textAlign: "right"
+              }}
+            >
+              {load ? (
+                <Space size="middle">
+                  <Spin size="large" />
+                </Space>
+              ) : (
+                <div>
+                  <Button onClick={this.onClose} style={{ marginRight: 8 }}>
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={(e) => {
+                      this.handleSubmit(e);
+                    }}
+                    type="primary"
+                  >
+                    Soumettre
+                  </Button>
+                </div>
+              )}
+            </div>
+          }
+        >
+          <Form layout="vertical" hideRequiredMark>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item
+                  name="name"
+                  label="Nom"
+                  rules={[
+                    {
+                      required: true,
+                      title: "name"
+                    }
+                  ]}
+                >
+                  <Input
+                    name="name"
+                    placeholder="nom"
+                    onChange={this.handleChange}
+                    value={name}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item
+                  name="eng_name"
+                  label="Nom anglais"
+                  rules={[
+                    {
+                      required: true,
+                      title: "name"
+                    }
+                  ]}
+                >
+                  <Input
+                    name="eng_name"
+                    placeholder="nom anglais"
+                    onChange={this.handleChange}
+                    value={eng_name}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item
+                  name="description"
+                  label="Description"
+                  rules={[
+                    {
+                      required: true,
+                      text: "Description"
+                    }
+                  ]}
+                >
+                  <TextArea
+                    rows={5}
+                    name="description"
+                    placeholder="description"
+                    onChange={this.handleChange}
+                    value={description}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item
+                  name="eng_description"
+                  label="Description en anglais"
+                  rules={[
+                    {
+                      required: true,
+                      text: "Description"
+                    }
+                  ]}
+                >
+                  <TextArea
+                    rows={5}
+                    name="eng_description"
+                    placeholder="description anglais"
+                    onChange={this.handleChange}
+                    value={eng_description}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </Drawer>
+      </>
+    );
+  }
+}
+
+export default Template_new;

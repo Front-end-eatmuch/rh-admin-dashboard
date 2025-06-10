@@ -1,0 +1,40 @@
+name: Continuous Deployment For Admin Web
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "14.x"
+
+      # - name: Install dependencies
+      #   run: npm i -f
+
+      - name: Create .env file
+        uses: ozaytsev86/create-env-file@v1
+
+      - name: SSH and deploy node app
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            sudo su
+            cd /var/www/private.panichefs.com/panichef-admin
+            sudo git pull
+            sudo rm -rf /var/www/private.panichefs.com/html/*
+            cd /var/www/private.panichefs.com/panichef-admin
+            cp -r /var/www/private.panichefs.com/panichef-admin/build/* /var/www/private.panichefs.com/html/
+
+

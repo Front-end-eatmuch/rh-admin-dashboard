@@ -7,86 +7,72 @@ import {
   Row,
   Input,
   Select,
-  DatePicker,
   notification,
   Space,
   Spin
 } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { EditOutlined } from "@ant-design/icons";
 import "../styles/general.css";
 
 import { MakeRequestAsync } from "../functions/axios";
-import { POST, UPDATE, GET } from "../constants/request-type";
+import { UPDATE } from "../constants/request-type";
 import { service_api } from "../constants/url";
 import {
   admin,
-  update_admin,
-  update_password_admin,
-  permission,
-  get_all_permission
+  update_admin
 } from "../constants/routes";
 import { openNotificationWithIcon } from "../functions/notification";
-import { raw_menu } from "../constants/raw-list";
 import {
-  EmailValidation,
-  PasswordValidation
+  EmailValidation
 } from "../functions/validateEmailPassword";
-import { decryptSingleData } from "../functions/cryptojs";
-import { uploadFile } from "../functions/upload-file";
 
 const token = sessionStorage.getItem("auth_token");
-
 const { Option } = Select;
 
 class Admin_edit extends Component {
-  state = {
-    visible: false,
-    firstname: this.props.row.firstname,
-    lastname: this.props.row.lastname,
-    number: this.props.row.number,
-    email: this.props.row.email,
-    password: "",
-    c_password: "",
-    gender: this.props.row.gender,
-    birthdate: this.props.row.birthdate,
-    pic: null,
-    list: [],
-    permission: this.props.row.permission._id,
-    status: 1,
-    load: true
+  constructor(props) {
+    super(props);
+    const { row } = props;
+    console.log("Données reçues:", row);
+    this.state = {
+      visible: false,
+      firstname: row?.firstname || "",
+      lastname: row?.lastname || "",
+      phone: row?.phone ? row.phone.toString() : "",
+      email: row?.email || "",
+      status: row?.status !== undefined ? row.status : null,
+      load: false
+    };
+    console.log("State initial:", this.state);
+  }
+
+  componentDidUpdate(prevProps) {
+    // Mettre à jour le state si les props changent
+    if (prevProps.row !== this.props.row) {
+      this.initializeFormData();
+    }
+  }
+
+  initializeFormData = () => {
+    const { row } = this.props;
+    console.log("Initialisation des données:", row);
+    if (row) {
+      this.setState({
+        firstname: row.firstname || "",
+        lastname: row.lastname || "",
+        phone: row.phone ? row.phone.toString() : "",
+        email: row.email || "",
+        status: row.status !== undefined ? row.status : null
+      });
+    }
   };
 
-  componentDidMount() {
-    this.getData();
-  }
   handleChange = (e) => {
     this.setState({ [e.target.name]: e.target.value });
   };
 
-  handleImageChange = (e) => {
-    e.preventDefault();
-    return this.setState({ pic: e.target.files[0] });
-  };
-  getData = async () => {
-    const request_details = {
-      type: GET,
-      url: service_api,
-      route: permission + "/" + get_all_permission,
-      data: null,
-      token: token
-    };
-    const response = await MakeRequestAsync(request_details)
-      .then((res) => {
-        this.setState({
-          list: decryptSingleData(res.data.permission),
-          load: false
-        });
-      })
-      .catch((err) => {
-        this.setState({ load: false });
-        console.log(err);
-        return openNotificationWithIcon("err", err);
-      });
+  handleStatusChange = (value) => {
+    this.setState({ status: value });
   };
 
   handleSubmit = async (e) => {
@@ -97,32 +83,9 @@ class Admin_edit extends Component {
       firstname,
       lastname,
       email,
-      number,
-      password,
-      c_password,
-      gender,
-      birthdate,
-      pic,
-      permission
+      phone,
+      status
     } = this.state;
-
-    const data = {
-      firstname: firstname.toLowerCase(),
-      lastname: lastname.toLowerCase(),
-      email: email.toLowerCase(),
-      number,
-      permission,
-      gender,
-      birthdate
-    };
-
-    const request_details_password = {
-      type: UPDATE,
-      url: service_api,
-      route: admin + "/" + update_password_admin + "/" + this.props.row._id,
-      data: data,
-      token: token
-    };
 
     if (!EmailValidation(email)) {
       this.setState({ load: false });
@@ -131,80 +94,52 @@ class Admin_edit extends Component {
         "Veuillez entrer un email valide"
       );
     }
-    if (password !== "") {
-      if (!PasswordValidation(password)) {
-        this.setState({ load: false });
-        return openNotificationWithIcon(
-          "error",
-          "Veuillez entrer un mot de passe (fort) A-a-z0-9"
-        );
-      }
-      if (password !== c_password) {
-        this.setState({ load: false });
-        return openNotificationWithIcon(
-          "error",
-          "Veuillez entrer le même mot de passe"
-        );
-      }
-
-      const response = await MakeRequestAsync(request_details_password).catch(
-        (err) => {
-          console.log(err);
-          this.setState({ load: false });
-          return openNotificationWithIcon("error", err);
-        }
-      );
-    }
 
     if (
       firstname === "" ||
       lastname === "" ||
-      number === "" ||
-      permission === "" ||
-      !gender ||
-      !birthdate
+      phone === "" ||
+      email === "" ||
+      status === null || status === undefined
     ) {
       this.setState({ load: false });
       return openNotificationWithIcon(
         "error",
-        "Vous devez remplir tous les champs"
+        "Vous devez remplir tous les champs obligatoires"
       );
     }
 
-    let pic_url;
-
-    if (pic !== null) {
-      pic_url = await uploadFile(pic);
-      if (!pic_url.data.success) {
-        this.setState({ load: false });
-        return openNotificationWithIcon(
-          "error",
-          "Nous n'avons pas pu télécharger votre image"
-        );
-      }
-    }
+    const data = {
+      firstname,
+      lastname,
+      email,
+      phone: parseInt(phone),
+      status
+    };
 
     const request_details = {
       type: UPDATE,
       url: service_api,
       route: admin + "/" + update_admin + "/" + this.props.row._id,
-      data: {
-        ...data,
-        pic: pic !== null ? pic_url.data.url : this.props.row.pic
-      },
+      data: data,
       token: token
     };
 
     const response = await MakeRequestAsync(request_details).catch((err) => {
       console.log(err);
       this.setState({ load: false });
-      return openNotificationWithIcon("error", err);
+      return openNotificationWithIcon("error", err?.response?.data?.message || "Erreur lors de la mise à jour");
     });
 
-    return setTimeout(() => window.location.reload(), 0);
+    if (response) {
+      openNotificationWithIcon("success", "Administrateur modifié avec succès");
+      this.onClose();
+      return setTimeout(() => window.location.reload(), 1000);
+    }
   };
 
   showDrawer = () => {
+    this.initializeFormData(); // Réinitialiser les données à l'ouverture
     this.setState({
       visible: true
     });
@@ -221,23 +156,31 @@ class Admin_edit extends Component {
       firstname,
       lastname,
       email,
-      number,
-      permission,
-      password,
-      c_password,
-      pic,
-      gender,
-      birthdate,
-      list,
+      phone,
+      status,
       load
     } = this.state;
+
+    const { row } = this.props;
+
+    console.log("State actuel dans render:", this.state);
+
+    // Vérifier que les données de l'admin sont disponibles
+    if (!row || !row._id) {
+      return (
+        <Button type="primary" disabled>
+          <EditOutlined /> Données manquantes
+        </Button>
+      );
+    }
+
     return (
       <>
-        <Button type="danger" onClick={this.showDrawer}>
-          Modifier
+        <Button type="primary" onClick={this.showDrawer}>
+          <EditOutlined /> Modifier
         </Button>
         <Drawer
-          title="Modification de compte administrateur"
+          title={`Modification - ${row.firstname} ${row.lastname}`}
           width={720}
           onClose={this.onClose}
           visible={this.state.visible}
@@ -263,7 +206,7 @@ class Admin_edit extends Component {
                     }}
                     type="primary"
                   >
-                    Soumettre
+                    Modifier
                   </Button>
                 </div>
               )}
@@ -274,39 +217,39 @@ class Admin_edit extends Component {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  // name="firstname"
-                  label="Nom"
+                  label="Prénom"
                   rules={[
                     {
                       required: true,
-                      role: "Veuillez entrer le nom de l'administrateur"
+                      message: "Veuillez entrer le prénom de l'administrateur"
                     }
                   ]}
                 >
                   <Input
                     name="firstname"
-                    placeholder="Veuillez entrer le nom"
+                    placeholder="Veuillez entrer le prénom"
                     onChange={this.handleChange}
                     value={firstname}
+                    defaultValue={row?.firstname}
                   />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
-                  // name="lastname"
-                  label="Prénom"
+                  label="Nom"
                   rules={[
                     {
                       required: true,
-                      role: "Veuillez entrer le prénom de l'administrateur"
+                      message: "Veuillez entrer le nom de l'administrateur"
                     }
                   ]}
                 >
                   <Input
                     name="lastname"
-                    placeholder="Veuillez entrer le prénom"
+                    placeholder="Veuillez entrer le nom"
                     onChange={this.handleChange}
                     value={lastname}
+                    defaultValue={row?.lastname}
                   />
                 </Form.Item>
               </Col>
@@ -314,39 +257,41 @@ class Admin_edit extends Component {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  // name="email"
                   label="Email"
                   rules={[
                     {
                       required: true,
-                      role: "Veuillez entrer l'email de l'administrateur"
+                      message: "Veuillez entrer l'email de l'administrateur"
                     }
                   ]}
                 >
                   <Input
                     name="email"
+                    type="email"
                     placeholder="Veuillez entrer l'email"
                     onChange={this.handleChange}
                     value={email}
+                    defaultValue={row?.email}
                   />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
-                  // name="number"
-                  label="Contact"
+                  label="Téléphone"
                   rules={[
                     {
                       required: true,
-                      role: "Veuillez entrer le contact de l'administrateur"
+                      message: "Veuillez entrer le téléphone de l'administrateur"
                     }
                   ]}
                 >
                   <Input
-                    name="number"
-                    placeholder="Veuillez entrer le contact"
+                    name="phone"
+                    type="number"
+                    placeholder="Veuillez entrer le téléphone"
                     onChange={this.handleChange}
-                    value={number}
+                    value={phone}
+                    defaultValue={row?.phone?.toString()}
                   />
                 </Form.Item>
               </Col>
@@ -354,162 +299,22 @@ class Admin_edit extends Component {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  // name="birthdate"
-                  label="Date de naissance"
+                  label="Statut"
                   rules={[
                     {
                       required: true,
-                      role: "Veuillez entrer la date de naissance"
-                    }
-                  ]}
-                >
-                  <input
-                    style={{
-                      width: "100%",
-                      border: "1px solid #cecece"
-                    }}
-                    type="date"
-                    name="birthdate"
-                    placeholder="Veuillez entrer la date de naissance"
-                    onChange={this.handleChange}
-                    value={birthdate}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  // name="gender"
-                  label="Genre"
-                  rules={[
-                    {
-                      required: true,
-                      role: "Veuillez selectionner le genre"
+                      message: "Veuillez sélectionner le statut de l'administrateur"
                     }
                   ]}
                 >
                   <Select
-                    allowClear
-                    style={{ width: "100%" }}
-                    placeholder="Selectionner parmis les options"
-                    defaultValue={gender}
-                    onChange={(data) => {
-                      return this.setState({ gender: data });
-                    }}
+                    placeholder="Sélectionner le statut"
+                    onChange={this.handleStatusChange}
+                    value={status}
+                    defaultValue={row?.status}
                   >
-                    {[
-                      {
-                        _id: "male",
-                        name: "Homme"
-                      },
-                      {
-                        _id: "female",
-                        name: "Femme"
-                      },
-                      {
-                        _id: "other",
-                        name: "Autre"
-                      }
-                    ].map((item, i) => (
-                      <Option key={item?._id}>
-                        <span>{item?.name}</span>
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="password"
-                  label="Mot de passe"
-                  rules={[
-                    {
-                      required: true,
-                      role: "Veuillez entrer le mot de passe de l'administrateur"
-                    }
-                  ]}
-                >
-                  <Input
-                    name="password"
-                    type="password"
-                    placeholder="Veuillez entrer le mot de passe"
-                    onChange={this.handleChange}
-                    value={password}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="c_password"
-                  label="Confirmer Mot de passe"
-                  rules={[
-                    {
-                      required: true,
-                      role: "Veuillez confimer le mot de passe de l'administrateur"
-                    }
-                  ]}
-                >
-                  <Input
-                    name="c_password"
-                    type="password"
-                    placeholder="Veuillez confirmer le mot de passe"
-                    onChange={this.handleChange}
-                    value={c_password}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row>
-              <Col span={12}>
-                <Form.Item
-                  name="pic"
-                  label="Photo profile"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Upload is required"
-                    }
-                  ]}
-                >
-                  <Input
-                    type="file"
-                    // multiple={true}
-                    accept="image/x-png,image/jpeg,image/jpg"
-                    placeholder="Upload picture"
-                    onChange={this.handleImageChange}
-                    value={pic}
-                    name="pic"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={24}>
-                <Form.Item
-                  // name="permission"
-                  label="Permission"
-                  rules={[
-                    {
-                      required: true,
-                      role: "Veuillez selectionner le genre"
-                    }
-                  ]}
-                >
-                  <Select
-                    allowClear
-                    style={{ width: "100%" }}
-                    placeholder="Selectionner parmis les options"
-                    defaultValue={permission}
-                    onChange={(data) => {
-                      return this.setState({ permission: data });
-                    }}
-                  >
-                    {list.map((item, i) => (
-                      <Option key={item._id}>
-                        <span>{item.name}</span>
-                      </Option>
-                    ))}
+                    <Option value={true}>Actif</Option>
+                    <Option value={false}>Inactif</Option>
                   </Select>
                 </Form.Item>
               </Col>

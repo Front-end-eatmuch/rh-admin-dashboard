@@ -30,6 +30,7 @@ import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
 import { CSVLink } from "react-csv";
 import Activity_edit from "../forms/Activity_edit";
+import Activity_new from "../forms/Activity_new";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -392,6 +393,7 @@ class Activity extends Component {
                 }
               }}
             />,
+            <Activity_new />,
             <CSVLink data={data}>Exporter CSV/Excel</CSVLink>
           ]}
         >

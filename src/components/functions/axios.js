@@ -12,6 +12,7 @@ const MakeRequestAsync = async ({
   token,
   contentType = "application/json"
 }) => {
+    console.log(contentType)
   let config = {
     headers: {
       "Content-Type": contentType,
@@ -24,17 +25,25 @@ const MakeRequestAsync = async ({
     case POST:
       return await Axios.post(
         `${url}/${route}`,
-        {
-          encrypted: encryptData(JSON.stringify(data)),
-          // data: data
+        contentType === "multipart/form-data" ? data : {
+          // encrypted: encryptData(JSON.stringify(data))
+          encrypted: encryptData(JSON.stringify(data))
         },
+        // {
+        //   encrypted: encryptData(JSON.stringify(data)),
+        //   // data: data
+        // },
         config
       );
     // break;
     case UPDATE:
       return await Axios.put(
         `${url}/${route}`,
-        {
+        // {
+        //   encrypted: encryptData(JSON.stringify(data))
+        // },
+        contentType === "multipart/form-data" ? data : {
+          // encrypted: encryptData(JSON.stringify(data))
           encrypted: encryptData(JSON.stringify(data))
         },
         config

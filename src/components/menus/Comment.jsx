@@ -111,8 +111,8 @@ class Comment extends Component {
           createdAt: report.createdAt
         }
       }));
-      console.log("Données de l'API:", response.data);
-      console.log("Commentaires transformés:", reportedComments);
+      // console.log("Données de l'API:", response.data);
+      // console.log("Commentaires transformés:", reportedComments);
       this.setState({ load: false, data: reportedComments });
     } else {
       this.setState({ load: false, data: response.data.comments });
@@ -238,7 +238,7 @@ class Comment extends Component {
         `${err?.response?.data?.message}`
       );
     });
-    console.log(response);
+    // console.log(response);
     return setTimeout(() => window.location.reload(), 1000);
   };
 
@@ -249,7 +249,7 @@ class Comment extends Component {
       route: comment + "/admin/delete-comment/" + id,
       token: token
     };
-    console.log(token);
+    // console.log(token);
     const response = await MakeRequestAsync(request_details).catch((err) => {
       return openNotificationWithIcon("error", `${err.response.data}`);
     });
@@ -359,14 +359,13 @@ class Comment extends Component {
         title: "Date",
         dataIndex: !this.state.isReportedView ? "createdAt" : "reportInfo",
         render: (text) => (
-          <Text>{new Date(!this.state.isReportedView ? text : text.createdAt).toLocaleString('fr-FR')} {console.log(text)} </Text>
+          <Text>{new Date(!this.state.isReportedView ? text : text.createdAt).toLocaleString('fr-FR')} </Text>
         )
       },
       {
         title: "Statut",
         dataIndex: "status",
         render: (status, record) => {
-            console.log(record);
           if (record.reportInfo) {
             // Pour les commentaires signalés
             switch (record.reportInfo.status) {

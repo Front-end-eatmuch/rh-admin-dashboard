@@ -4,7 +4,6 @@ import {
   Tag,
   Button,
   Statistic,
-  Descriptions,
   Row,
   Col,
   Dropdown,
@@ -12,28 +11,32 @@ import {
   Table,
   Input,
   Space,
-  Spin
+  Spin,
+  DatePicker
 } from "antd";
 import { Link } from "react-router-dom";
 import { connect } from "react-redux";
 
-import Highlighter from "react-highlight-words";
-import { SearchOutlined } from "@ant-design/icons";
-
-import Admin_new from "../forms/admin_new";
-import Admin_edit from "../forms/admin_edit";
-
+import { GET, DELETE, UPDATE } from "../constants/request-type";
+import { service_api } from "../constants/url";
 import {
   admin,
-  delete_admin,
   get_all_admin,
-  update_admin
+  // get_all_total_admin,
+  update_admin,
+  delete_admin
 } from "../constants/routes";
 import { MakeRequestAsync } from "../functions/axios";
 import { openNotificationWithIcon } from "../functions/notification";
-import { GET, DELETE, UPDATE } from "../constants/request-type";
-import { service_api } from "../constants/url";
+import Highlighter from "react-highlight-words";
+import { SearchOutlined } from "@ant-design/icons";
+
+import Admin_edit from "../forms/admin_edit";
+import Admin_new from "../forms/admin_new";
+import { CSVLink } from "react-csv";
 import { decryptSingleData } from "../functions/cryptojs";
+
+const { RangePicker } = DatePicker;
 
 const token = sessionStorage.getItem("auth_token");
 
@@ -43,14 +46,15 @@ class AdminAdmin extends Component {
     searchText: "",
     searchedColumn: "",
     load: true,
+    adminTotal: 0,
     data: [],
-    overall: true,
-    allowed: false,
-    blocked: false
+    start: null,
+    end: null
   };
 
   componentDidMount() {
     this.getData();
+    this.getAdminTotal();
   }
 
   getData = async () => {
@@ -61,22 +65,28 @@ class AdminAdmin extends Component {
       data: null,
       token: token
     };
-
     const response = await MakeRequestAsync(request_details).catch((err) => {
       this.setState({ load: false });
-      console.log(err);
-      return openNotificationWithIcon(
-        "error",
-        `${err?.response?.data?.message}`
-      );
+      return openNotificationWithIcon("error", `${err.response.data}`);
     });
+   
+    this.setState({ load: false, data: decryptSingleData(response.data.admin) || [] });
+  };
 
-    // console.log(response.data);
-
-    this.setState({
-      load: false,
-      data: decryptSingleData(response?.data?.admin)
+  getAdminTotal = async () => {
+    const request_details = {
+      type: GET,
+      url: service_api,
+      route: admin + "/count-admin",
+      data: null,
+      token: token
+    };
+    const response = await MakeRequestAsync(request_details).catch((err) => {
+      this.setState({ load: false });
+      return openNotificationWithIcon("error", `${err.response.data}`);
     });
+    console.log(response.data);
+    this.setState({ load: false, adminTotal: response.data.admin || 0 });
   };
 
   onSelectChange = (selectedRowKeys) => {
@@ -180,27 +190,12 @@ class AdminAdmin extends Component {
     this.setState({ searchText: "" });
   };
 
-  handleDelete = async (id) => {
-    const request_details = {
-      type: DELETE,
-      url: service_api,
-      route: admin + "/" + delete_admin + "/" + id,
-      token: token
-    };
-    const response = await MakeRequestAsync(request_details).catch((err) => {
-      return openNotificationWithIcon(
-        "error",
-        `${err?.response?.data?.message}`
-      );
-    });
-
-    return setTimeout(() => window.location.reload(), 1000);
-  };
-
   handleStatus = async (id, status) => {
     const data = {
+      id,
       status: status
     };
+
     const request_details = {
       type: UPDATE,
       url: service_api,
@@ -209,83 +204,75 @@ class AdminAdmin extends Component {
       token: token
     };
     const response = await MakeRequestAsync(request_details).catch((err) => {
+      return openNotificationWithIcon(
+        "error",
+        `${err?.response?.data?.message}`
+      );
+    });
+    window.location.reload();
+  };
+
+  handleDelete = async (id) => {
+    const request_details = {
+      type: DELETE,
+      url: service_api,
+      route: admin + "/" + delete_admin + "/" + id,
+      token: token
+    };
+    const response = await MakeRequestAsync(request_details).catch((err) => {
       return openNotificationWithIcon("error", `${err.response.data}`);
     });
+
     return setTimeout(() => window.location.reload(), 1000);
   };
 
   render() {
     const columns = [
+      // {
+      //   title: "Id",
+      //   dataIndex: "_id",
+      //   ...this.getColumnSearchProps("_id"),
+      //   fixed: "left"
+      // },
       {
-        title: "Id",
-        dataIndex: "_id",
-        // width: "20%",
-        ...this.getColumnSearchProps("_id"),
-        fixed: "left"
+        title: "Prénom",
+        dataIndex: "firstname",
+        ...this.getColumnSearchProps("firstname")
       },
       {
         title: "Nom",
-        dataIndex: "firstname",
-        // width: "20%",
-        ...this.getColumnSearchProps("firstname")
-        // fixed: "left",
-      },
-      {
-        title: "Prénom",
         dataIndex: "lastname",
-        // width: "20%",
         ...this.getColumnSearchProps("lastname")
-        // fixed: "left",
       },
       {
-        title: "Contact",
-        dataIndex: "number",
-        // width: "20%",
-        ...this.getColumnSearchProps("number"),
-        render: (text) => {
-          return <a href={`tel:${text}`}>{text}</a>;
-        }
+        title: "Email",
+        dataIndex: "email",
+        ...this.getColumnSearchProps("email"),
+        render: (text) => (
+          <a href={`mailto:${text}`}>{text}</a>
+        )
       },
       {
-        title: "Profil",
-        dataIndex: "pic",
-        render: (text) => {
-          return (
-            <a href={text} target="_blank" rel="noreferrer">
-              <img
-                src={text}
-                style={{
-                  width: 70
-                }}
-                alt="profil"
-              />
-            </a>
-          );
-        }
+        title: "Téléphone",
+        dataIndex: "phone",
+        ...this.getColumnSearchProps("phone"),
+        render: (text) => (
+          <a href={text ? `tel:${text}` : ""}>
+            {text || "Aucun téléphone"}
+          </a>
+        )
       },
       {
-        title: "Role & Permission",
-        dataIndex: "permission",
-        // width: "20%",
-        render: (text) => {
-          return (
-            <Tag color={"blue"} key={text.name}>
-              {text.name}
-            </Tag>
-          );
-        }
-      },
-      {
-        title: "Actif",
+        title: "Statut",
         dataIndex: "status",
         render: (text) =>
-          text === false ? (
-            <Tag color={"volcano"} key={text}>
-              NON
+          text === true ? (
+            <Tag color={"green"} key={text}>
+              Actif
             </Tag>
           ) : (
-            <Tag color={"green"} key={text}>
-              OUI
+            <Tag color={"volcano"} key={text}>
+              Inactif
             </Tag>
           )
       },
@@ -293,6 +280,11 @@ class AdminAdmin extends Component {
         title: "Création",
         dataIndex: "createdAt",
         render: (text) => <Tag>{text?.slice(0, 16)}</Tag>
+      },
+      {
+        title: "Dernière MAJ",
+        dataIndex: "updatedAt",
+        render: (text) => <Tag color="blue">{text?.slice(0, 16)}</Tag>
       },
       {
         title: "Actions",
@@ -310,7 +302,8 @@ class AdminAdmin extends Component {
         )
       }
     ];
-    const { selectedRowKeys, allowed, blocked, overall } = this.state;
+
+    const { selectedRowKeys } = this.state;
     const rowSelection = {
       selectedRowKeys,
       onChange: this.onSelectChange,
@@ -354,16 +347,16 @@ class AdminAdmin extends Component {
         <Menu.Item>
           <Admin_edit row={record} />
         </Menu.Item>
-        {record.status === true ? (
+        {record.status === false ? (
           <Menu.Item>
-            <Link onClick={() => this.handleStatus(record._id, false)}>
-              Verrouiller
+            <Link onClick={() => this.handleStatus(record._id, true)}>
+              Activer
             </Link>
           </Menu.Item>
         ) : (
           <Menu.Item>
-            <Link onClick={() => this.handleStatus(record._id, true)}>
-              Autoriser
+            <Link onClick={() => this.handleStatus(record._id, false)}>
+              Désactiver
             </Link>
           </Menu.Item>
         )}
@@ -372,100 +365,80 @@ class AdminAdmin extends Component {
         </Menu.Item>
       </Menu>
     );
-    const { load, data } = this.state;
+
+    const { load, data, start, end } = this.state;
+    console.log(data);
+    
     return (
       <>
         <PageHeader
           onBack={() => {
             //  window.history.back()
           }}
-          title="Adminstrateurs"
-          tags={<Tag color="blue">Liste des admins</Tag>}
+          title="Administrateurs"
+          tags={<Tag color="blue">Liste des administrateurs</Tag>}
           subTitle=""
           extra={[
+            <RangePicker
+              showTime
+              onChange={(data) => {
+                console.log(data);
+                if (data === null) {
+                  this.setState({
+                    start: null,
+                    end: null
+                  });
+                  return;
+                }
+                let d1 = data[0].format("YYYY-MM-DDTHH:mm:ss");
+                let d2 = data[1].format("YYYY-MM-DDTHH:mm:ss");
+
+                this.setState({ start: d1, end: d2 });
+              }}
+            />,
             <Admin_new />,
-            <Button
-              key="2"
-              color="primary"
-              onClick={() =>
-                this.setState({
-                  allowed: false,
-                  blocked: false,
-                  verified: false,
-                  overall: true
-                })
-              }
-            >
-              Tout
-            </Button>,
-            <Button
-              key="2"
-              color="primary"
-              onClick={() =>
-                this.setState({
-                  allowed: true,
-                  blocked: false,
-                  overall: false
-                })
-              }
-            >
-              Actif
-            </Button>,
-            <Button
-              key="3"
-              color="danger"
-              onClick={() =>
-                this.setState({
-                  allowed: false,
-                  blocked: true,
-                  overall: false
-                })
-              }
-            >
-              Inactif
-            </Button>
+            <CSVLink data={data}>Exporter CSV/Excel</CSVLink>
           ]}
         >
           <Row>
             <Statistic
-              title="Actif"
+              title="Total Administrateurs"
               value={
-                data.filter((res) => {
-                  return res.status === 0;
+                data?.filter((item) => {
+                  if (start === null && end === null) {
+                    return item;
+                  }
+                  return item.createdAt >= start && item.createdAt <= end;
                 }).length
               }
             />
             <Statistic
-              title="Inactif"
-              value={
-                data.filter((res) => {
-                  return res.status === 1;
-                }).length
-              }
+              title="Actifs"
+              value={data?.filter((item) => item.status === true).length}
               style={{
                 margin: "0 32px"
               }}
             />
-            <Statistic title="Total" value={data.length} />
+            <Statistic
+              title="Inactifs"
+              value={data?.filter((item) => item.status === false).length}
+            />
           </Row>
           <Row>
             {load ? (
-              <Space size="middle">
+              <Space size="middle" style={{ marginTop: 20 }}>
                 <Spin size="large" />
               </Space>
             ) : (
-              <Col span={24}>
+              <Col span={24} style={{ marginTop: 20 }}>
                 <Table
                   // rowSelection={rowSelection}
-                  // size="small"
                   columns={columns}
-                  dataSource={data.filter((res) => {
-                    if (allowed && !blocked && !overall)
-                      return res.status === 0;
-                    if (!allowed && blocked && !overall)
-                      return res.status === 1;
-
-                    return res;
+                  dataSource={data.filter((item) => {
+                    if (start === null && end === null) {
+                      return item;
+                    }
+                    return item.createdAt >= start && item.createdAt <= end;
                   })}
                 />
               </Col>
@@ -487,4 +460,4 @@ const mapDispatchStoreToProps = (dispatch) => {
   return {};
 };
 
-export default connect(mapStateToProps, mapDispatchStoreToProps)(AdminAdmin);
+export default connect(mapStateToProps, mapDispatchStoreToProps)(AdminAdmin); 

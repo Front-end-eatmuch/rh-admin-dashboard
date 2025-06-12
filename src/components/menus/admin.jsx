@@ -12,8 +12,7 @@ import {
   Input,
   Space,
   Spin,
-  DatePicker,
-  Select
+  DatePicker
 } from "antd";
 import { Link } from "react-router-dom";
 import { connect } from "react-redux";
@@ -21,56 +20,64 @@ import { connect } from "react-redux";
 import { GET, DELETE, UPDATE } from "../constants/request-type";
 import { service_api } from "../constants/url";
 import {
-  user,
-  get_all_user,
-  get_all_total_user,
-  update_user,
-  delete_user
+  admin,
+  get_all_admin,
+  get_all_total_admin,
+  update_admin,
+  delete_admin
 } from "../constants/routes";
-import GoogleMapReact from "google-map-react";
 import { MakeRequestAsync } from "../functions/axios";
 import { openNotificationWithIcon } from "../functions/notification";
 import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
 
-// import User_new from "../forms/user_new";
-import User_edit from "../forms/user_edit";
-
-import { CSVLink, CSVDownload } from "react-csv";
-import { decryptSingleData } from "../functions/cryptojs";
+import Admin_edit from "../forms/admin_edit";
+import Admin_new from "../forms/admin_new";
+import { CSVLink } from "react-csv";
 
 const { RangePicker } = DatePicker;
 
 const token = sessionStorage.getItem("auth_token");
 
-class UserUser extends Component {
+class AdminAdmin extends Component {
   state = {
     selectedRowKeys: [],
     searchText: "",
     searchedColumn: "",
     load: true,
-    userTotal: 0,
+    adminTotal: 0,
     data: [],
-    activeRangs: [],
     start: null,
-    end: null,
-    overall: true,
-    allowed: false,
-    blocked: false,
-    roleRangFilter: null
+    end: null
   };
 
   componentDidMount() {
     this.getData();
-    this.getUserTotal();
-    this.getActiveRangs();
+    this.getAdminTotal();
   }
 
   getData = async () => {
     const request_details = {
       type: GET,
       url: service_api,
-      route: user + "/" + get_all_user,
+      route: admin + "/" + get_all_admin,
+      data: null,
+      token: token
+    };
+    const response = await MakeRequestAsync(request_details).catch((err) => {
+      this.setState({ load: false });
+      return openNotificationWithIcon("error", `${err.response.data}`);
+    });
+    console.log("response.data");
+    console.log(response.data);
+    // this.setState({ load: false, data: response.data.admin || [] });
+  };
+
+  getAdminTotal = async () => {
+    const request_details = {
+      type: GET,
+      url: service_api,
+      route: admin + "/" + get_all_total_admin,
       data: null,
       token: token
     };
@@ -79,40 +86,7 @@ class UserUser extends Component {
       return openNotificationWithIcon("error", `${err.response.data}`);
     });
     console.log(response.data);
-    this.setState({ load: false, data: decryptSingleData(response.data.user) });
-  };
-
-  getUserTotal = async () => {
-    const request_details = {
-      type: GET,
-      url: service_api,
-      route: user + "/" + get_all_total_user,
-      data: null,
-      token: token
-    };
-    const response = await MakeRequestAsync(request_details).catch((err) => {
-      this.setState({ load: false });
-      return openNotificationWithIcon("error", `${err.response.data}`);
-    });
-    // console.log(response.data);
-    this.setState({ load: false, userTotal: response.data.user });
-  };
-
-  getActiveRangs = async () => {
-    const request_details = {
-      type: GET,
-      url: service_api,
-      route: "rang" + "/active-rangs",
-      data: null,
-      token: token
-    };
-    const response = await MakeRequestAsync(request_details).catch((err) => {
-      return openNotificationWithIcon("error", `${err.response.data}`);
-    });
-    console.log(response.data.rangs)
-    if (response?.data) {
-      this.setState({ activeRangs: response.data.rangs });
-    }
+    this.setState({ load: false, adminTotal: response.data.admin || 0 });
   };
 
   onSelectChange = (selectedRowKeys) => {
@@ -222,12 +196,10 @@ class UserUser extends Component {
       status: status
     };
 
-    // console.log(id)
-
     const request_details = {
       type: UPDATE,
       url: service_api,
-      route: user + "/" + "update-user-status",
+      route: admin + "/" + "update-admin-status",
       data: data,
       token: token
     };
@@ -237,14 +209,14 @@ class UserUser extends Component {
         `${err?.response?.data?.message}`
       );
     });
-    // return setTimeout(() => window.location.reload(), 1000);
+    window.location.reload();
   };
 
   handleDelete = async (id) => {
     const request_details = {
       type: DELETE,
       url: service_api,
-      route: user + "/" + delete_user + "/" + id,
+      route: admin + "/" + delete_admin + "/" + id,
       token: token
     };
     const response = await MakeRequestAsync(request_details).catch((err) => {
@@ -254,96 +226,53 @@ class UserUser extends Component {
     return setTimeout(() => window.location.reload(), 1000);
   };
 
-  handleRoleRangFilter = (value) => {
-    this.setState({ roleRangFilter: value });
-  };
-
   render() {
     const columns = [
       {
         title: "Id",
         dataIndex: "_id",
-        // width: "20%",
         ...this.getColumnSearchProps("_id"),
         fixed: "left"
       },
       {
-        title: "Nom",
-        dataIndex: "firstname",
-        // width: "20%",
-        ...this.getColumnSearchProps("firstname")
-        // fixed: "left"
-      },
-      {
         title: "Prénom",
-        dataIndex: "lastname",
-        // width: "20%",
-        ...this.getColumnSearchProps("lastname")
-        // fixed: "left"
+        dataIndex: "firstname",
+        ...this.getColumnSearchProps("firstname")
       },
-      // {
-      //   title: "Email",
-      //   dataIndex: "email",
-      //   // width: "20%",
-      //   ...this.getColumnSearchProps("email")
-      //   // fixed: "left"
-      // },
       {
-        title: "Contact",
-        dataIndex: "phoneNumber",
-        // width: "20%",
-        ...this.getColumnSearchProps("phoneNumber"),
-        // fixed: "left",
+        title: "Nom",
+        dataIndex: "lastname",
+        ...this.getColumnSearchProps("lastname")
+      },
+      {
+        title: "Email",
+        dataIndex: "email",
+        ...this.getColumnSearchProps("email"),
         render: (text) => (
-          <a href={text === "" ? "" : `tel:${text}`}>
-            {text === "" || !text ? "Aucun contact" : text}
+          <a href={`mailto:${text}`}>{text}</a>
+        )
+      },
+      {
+        title: "Téléphone",
+        dataIndex: "phone",
+        ...this.getColumnSearchProps("phone"),
+        render: (text) => (
+          <a href={text ? `tel:${text}` : ""}>
+            {text || "Aucun téléphone"}
           </a>
         )
       },
-      // {
-      //   title: "Pays/code",
-      //   dataIndex: "country_code",
-      //   // width: "20%",
-      //   ...this.getColumnSearchProps("country_code"),
-      //   // fixed: "left",
-      //   render: (text) => <Tag color="blue">{text}</Tag>
-      // },
-      // {
-      //   title: "Informations",
-      //   dataIndex: "informations",
-      //   render: (text, record) => (
-      //     <Tag color="yellow">
-      //       <span> Dernière connexion : {record?.last_login}</span>
-      //     </Tag>
-      //   )
-      // },
       {
-        title: "Photo profile",
-        dataIndex: "pic1",
-        render: (text) =>
-          text === null ? (
-            "Aucune photo"
-          ) : (
-            <a href={text} target="_blank" rel="noreferrer">
-              <img
-                alt="user profile"
-                src={text}
-                style={{ width: 50, height: 50, borderRadius: 5 }}
-              />
-            </a>
-          )
-      },
-      {
-        title: "Actif",
+        title: "Statut",
         dataIndex: "status",
         render: (text) =>
           text === true ? (
             <Tag color={"green"} key={text}>
-              Oui
+              Actif
             </Tag>
           ) : (
             <Tag color={"volcano"} key={text}>
-              Non
+              Inactif
             </Tag>
           )
       },
@@ -351,6 +280,11 @@ class UserUser extends Component {
         title: "Création",
         dataIndex: "createdAt",
         render: (text) => <Tag>{text?.slice(0, 16)}</Tag>
+      },
+      {
+        title: "Dernière MAJ",
+        dataIndex: "updatedAt",
+        render: (text) => <Tag color="blue">{text?.slice(0, 16)}</Tag>
       },
       {
         title: "Actions",
@@ -368,7 +302,8 @@ class UserUser extends Component {
         )
       }
     ];
-    const { selectedRowKeys, allowed, blocked, overall } = this.state;
+
+    const { selectedRowKeys } = this.state;
     const rowSelection = {
       selectedRowKeys,
       onChange: this.onSelectChange,
@@ -409,16 +344,9 @@ class UserUser extends Component {
 
     const MenuButton = (record) => (
       <Menu>
-        {/* <Menu.Item>
-          <User_info_print row={record} />
-        </Menu.Item> */}
         <Menu.Item>
-          <User_edit row={record} activeRangs={this.state.activeRangs} />
+          <Admin_edit row={record} />
         </Menu.Item>
-        {/* <Menu.Item>
-          <User_doc row={record} />
-        </Menu.Item> */}
-
         {record.status === false ? (
           <Menu.Item>
             <Link onClick={() => this.handleStatus(record._id, true)}>
@@ -428,7 +356,7 @@ class UserUser extends Component {
         ) : (
           <Menu.Item>
             <Link onClick={() => this.handleStatus(record._id, false)}>
-              Desactiver
+              Désactiver
             </Link>
           </Menu.Item>
         )}
@@ -439,26 +367,18 @@ class UserUser extends Component {
     );
 
     const { load, data, start, end } = this.state;
-    console.log(data)
+    console.log(data);
+    
     return (
       <>
         <PageHeader
           onBack={() => {
             //  window.history.back()
           }}
-          title="Utilisateurs"
-          tags={<Tag color="blue">Liste des utilisateurs</Tag>}
+          title="Administrateurs"
+          tags={<Tag color="blue">Liste des administrateurs</Tag>}
           subTitle=""
           extra={[
-            <Select
-              style={{ width: 200, marginRight: 16 }}
-              placeholder="Tous les utilisateurs"
-              onChange={this.handleRoleRangFilter}
-              allowClear
-            >
-              <Select.Option value="rang">Avec rang uniquement</Select.Option>
-              <Select.Option value="role">Avec role uniquement</Select.Option>
-            </Select>,
             <RangePicker
               showTime
               onChange={(data) => {
@@ -468,6 +388,7 @@ class UserUser extends Component {
                     start: null,
                     end: null
                   });
+                  return;
                 }
                 let d1 = data[0].format("YYYY-MM-DDTHH:mm:ss");
                 let d2 = data[1].format("YYYY-MM-DDTHH:mm:ss");
@@ -475,54 +396,33 @@ class UserUser extends Component {
                 this.setState({ start: d1, end: d2 });
               }}
             />,
-            // <User_new />,
+            <Admin_new />,
             <CSVLink data={data}>Exporter CSV/Excel</CSVLink>
           ]}
         >
           <Row>
             <Statistic
-              title="Total"
-              value={this.state.userTotal
-                // data?.filter((item) => {
-                //   if (start === null && end === null) {
-                //     return item;
-                //   }
-                //   return item.createdAt >= start && item.createdAt <= end;
-                // }).length
+              title="Total Administrateurs"
+              value={
+                data?.filter((item) => {
+                  if (start === null && end === null) {
+                    return item;
+                  }
+                  return item.createdAt >= start && item.createdAt <= end;
+                }).length
               }
             />
-            {/* <Statistic
-              title="Actif"
-              value={data?.filter((item) => item.status === 1).length}
+            <Statistic
+              title="Actifs"
+              value={data?.filter((item) => item.status === true).length}
               style={{
                 margin: "0 32px"
               }}
             />
             <Statistic
-              title="Inactif"
-              value={data?.filter((item) => item.status === 2).length}
-              style={
-                {
-                  // margin: "0 32px"
-                }
-              }
+              title="Inactifs"
+              value={data?.filter((item) => item.status === false).length}
             />
-            <Statistic
-              title="En attente"
-              value={data?.filter((item) => item.status === 0).length}
-              style={{
-                margin: "0 32px"
-              }}
-            />
-            <Statistic
-              title="Suspendu"
-              value={data?.filter((item) => item.status === 3).length}
-              style={
-                {
-                  // margin: "0 32px"
-                }
-              }
-            /> */}
           </Row>
           <Row>
             {load ? (
@@ -533,25 +433,12 @@ class UserUser extends Component {
               <Col span={24} style={{ marginTop: 20 }}>
                 <Table
                   // rowSelection={rowSelection}
-                  // size="small"
-                  // scroll={{
-                  //   x: 2200
-                  // }}
                   columns={columns}
                   dataSource={data.filter((item) => {
-                    // Filtre par date
-                    const dateFilter = start === null && end === null
-                      ? true
-                      : item.createdAt >= start && item.createdAt <= end;
-                    
-                    // Filtre par présence de rang ou role
-                    const roleRangFilter = !this.state.roleRangFilter
-                      ? true
-                      : this.state.roleRangFilter === 'rang'
-                        ? (item.rang !== null && item.rang !== undefined) && (item.role === null || item.role === undefined)
-                        : (item.role !== null && item.role !== undefined) && (item.rang === null || item.rang === undefined);
-
-                    return dateFilter && roleRangFilter;
+                    if (start === null && end === null) {
+                      return item;
+                    }
+                    return item.createdAt >= start && item.createdAt <= end;
                   })}
                 />
               </Col>
@@ -573,4 +460,4 @@ const mapDispatchStoreToProps = (dispatch) => {
   return {};
 };
 
-export default connect(mapStateToProps, mapDispatchStoreToProps)(UserUser);
+export default connect(mapStateToProps, mapDispatchStoreToProps)(AdminAdmin); 

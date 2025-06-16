@@ -293,8 +293,8 @@ class Activity extends Component {
         title: "Payant",
         dataIndex: "paid",
         render: (paid) => (
-          <Tag color={paid ? "gold" : "green"}>
-            {paid ? "Payant" : "Gratuit"}
+          <Tag color={paid?.paid ? "gold" : "green"}>
+            {paid?.paid ? `Payant (${paid.amount.toLocaleString()} CFA)` : "Gratuit"}
           </Tag>
         )
       },

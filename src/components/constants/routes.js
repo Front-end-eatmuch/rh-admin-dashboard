@@ -88,7 +88,14 @@ const get_all_rang = "all-rang";
 const toggle_rang_status = "toggle";
 const delete_rang = "delete";
 
-
+// --------------------------Request Bill--------------------------
+const bill = "bill";
+// const create_bill = "create-bill";
+// const update_bill = "update-bill";
+const get_all_bill = "admin/all";
+const get_user_bill = "admin/user/:userId";
+const get_one_bill = "get-one";
+// const delete_bill = "delete";
 
 
 
@@ -455,6 +462,10 @@ export {
   get_all_rang,
   toggle_rang_status,
   delete_rang,
+  // --------------------------Request Bill--------------------------
+  bill,
+  get_all_bill,
+  get_user_bill,
 
 
 

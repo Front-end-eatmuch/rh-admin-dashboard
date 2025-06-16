@@ -4,11 +4,13 @@ import { IoNewspaperSharp } from "react-icons/io5";
 import { GrBike, GrNotification } from "react-icons/gr";
 import { GiCook } from "react-icons/gi";
 import { FaUsers, FaListAlt, FaHubspot } from "react-icons/fa";
+import { RiBillLine } from "react-icons/ri";
 import { AiFillShop, AiFillSetting } from "react-icons/ai";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 import { BiFoodMenu, BiStats } from "react-icons/bi";
 import { BiHelpCircle } from "react-icons/bi";
 import { MdHub } from "react-icons/md";
+import { VscTypeHierarchySub } from "react-icons/vsc";
 import { BsCalendarEvent } from "react-icons/bs";
 
 import AdminAdmin from "../menus/admin_admin";
@@ -67,6 +69,7 @@ import Activity from "../menus/Activity";
 import Comment from "../menus/Comment";
 import Role from "../menus/Role";
 import Rang from "../menus/Rang";
+import Bill from "../menus/Bill";
 // import CountryGlobal from "../menus/country_global";
 
 // import Dashboard from "../menus/dashboard";
@@ -193,7 +196,7 @@ const list_menu = [
   },
   {
     value: "rang",
-    icon: <FaUsers />,
+    icon: <VscTypeHierarchySub />,
     title: "Rangs",
     url: "/main/rang",
     component: Rang
@@ -211,6 +214,13 @@ const list_menu = [
     title: "Activités",
     url: "/main/activity",
     component: Activity
+  },
+  {
+    value: "bill",
+    icon: <RiBillLine />,
+    title: "Factures",
+    url: "/main/bill",
+    component: Bill
   },
   // {
   //   value: "user",

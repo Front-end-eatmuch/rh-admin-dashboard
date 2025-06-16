@@ -11,7 +11,8 @@ import {
   Switch,
   message,
   Modal,
-  DatePicker
+  DatePicker,
+  InputNumber
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import "../styles/general.css";
@@ -33,7 +34,8 @@ class Activity_new extends Component {
     previewImage: null,
     previewVisible: false,
     selectedFile: null,
-    categories: []
+    categories: [],
+    isPaid: false
   };
 
   componentDidMount() {
@@ -51,14 +53,14 @@ class Activity_new extends Component {
     
     try {
       const response = await MakeRequestAsync(request_details);
-      console.log('All Categories:', response.data);
+      // console.log('All Categories:', response.data);
       
       // Filtrer pour ne garder que les catégories avec relation "Activité" ou "Activité & Actualité"
       const activityCategories = (response.data.category || []).filter(
         cat => cat.relation === "Activité" || cat.relation === "Activité & Actualité"
       );
       
-      console.log('Filtered Categories:', activityCategories);
+      // console.log('Filtered Categories:', activityCategories);
       this.setState({ categories: activityCategories });
     } catch (err) {
       console.error('Erreur lors du chargement des catégories:', err);
@@ -105,10 +107,15 @@ class Activity_new extends Component {
       if (key === 'starting' || key === 'ending') {
         // Conversion des dates moment en ISO string
         formData.append(key, values[key].toISOString());
+      } else if (key === 'paid') {
+        // Structure du champ paid
+        formData.append('paid[paid]', values.paid);
+        formData.append('paid[amount]', values.amount || 0);
       } else {
         formData.append(key, values[key]);
       }
     });
+    
 
     // Ajout de l'adminId (récupéré depuis le token ou les props)
     // const adminId = sessionStorage.getItem("admin_id") || "defaultAdminId"; // À adapter selon votre logique
@@ -134,7 +141,7 @@ class Activity_new extends Component {
       const response = await MakeRequestAsync(request_details);
       openNotificationWithIcon("success", "Activité créée avec succès");
       this.onClose();
-      console.log(response);
+      // console.log(response);
        window.location.reload();
     } catch (err) {
       openNotificationWithIcon("error", err?.response?.data?.message || "Erreur lors de la création");
@@ -179,6 +186,7 @@ class Activity_new extends Component {
             initialValues={{
               accessible: true,
               paid: false,
+              
               progress: "À venir",
               status: true,
               starting: moment(),
@@ -274,7 +282,7 @@ class Activity_new extends Component {
                   label="Payant"
                   valuePropName="checked"
                 >
-                  <Switch />
+                  <Switch onChange={(e) => this.setState({ isPaid: e })} />
                 </Form.Item>
               </Col>
 
@@ -298,11 +306,25 @@ class Activity_new extends Component {
                 </Form.Item>
               </Col>
 
-              <Col span={8}>
+              {this.state.isPaid && (
+                <Col span={24}>
+                  <Form.Item
+                    name="amount"
+                    label="Montant (CFA)"
+                    rules={[
+                      { required: true, message: 'Veuillez entrer un montant' },
+                      { type: 'number', min: 0, message: 'Le montant doit être positif' }
+                    ]}
+                  >
+                    <InputNumber min={0} step={1} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              )}
+
+              {/* <Col span={8}>
                 <div style={{ paddingTop: 30 }}>
-                  {/* Espace pour l'alignement */}
                 </div>
-              </Col>
+              </Col> */}
 
               <Col span={12}>
                 <Form.Item

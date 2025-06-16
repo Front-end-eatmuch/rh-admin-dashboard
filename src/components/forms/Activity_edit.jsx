@@ -15,7 +15,8 @@ import {
   Upload,
   message,
   Modal,
-  DatePicker
+  DatePicker,
+  InputNumber
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import "../styles/general.css";
@@ -48,11 +49,13 @@ class Activity_edit extends Component {
     previewImage: null,
     previewVisible: false,
     selectedFile: null,
-    categories: []
+    categories: [],
+    isPaid: false
   };
 
   componentDidMount() {
     this.getCategories();
+    this.setState({ isPaid: this.props.row.paid?.paid || false });
   }
 
   getCategories = async () => {
@@ -138,6 +141,10 @@ class Activity_edit extends Component {
       if (key === 'starting' || key === 'ending') {
         // Conversion des dates moment en ISO string
         formData.append(key, values[key].toISOString());
+      } else if (key === 'paid') {
+        // Structure du champ paid
+        formData.append('paid[paid]', values.paid);
+        formData.append('paid[amount]', values.amount || 0);
       } else {
         formData.append(key, values[key]);
       }
@@ -252,8 +259,8 @@ class Activity_edit extends Component {
               <Col span={12}>
                 <Title level={5}>Type d'accès</Title>
                 <Space>
-                  <Tag color={row.paid ? "gold" : "green"}>
-                    {row.paid ? "Payant" : "Gratuit"}
+                  <Tag color={row.paid?.paid ? "gold" : "green"}>
+                    {row.paid?.paid ? `Payant (${row.paid.amount.toLocaleString()} CFA)` : "Gratuit"}
                   </Tag>
                   <Tag color={row.accessible ? "green" : "red"}>
                     {row.accessible ? "Accessible" : "Non accessible"}
@@ -342,7 +349,8 @@ class Activity_edit extends Component {
                 title: row.title,
                 description: row.description,
                 category: row.category?._id,
-                paid: row.paid,
+                paid: row.paid?.paid || false,
+                amount: row.paid?.amount || 0,
                 accessible: row.accessible,
                 progress: row.progress,
                 status: row.status,
@@ -446,9 +454,24 @@ class Activity_edit extends Component {
                     label="Payant"
                     valuePropName="checked"
                   >
-                    <Switch />
+                    <Switch onChange={(e) => this.setState({ isPaid: e })} />
                   </Form.Item>
                 </Col>
+
+                {this.state.isPaid && (
+                  <Col span={24}>
+                    <Form.Item
+                      name="amount"
+                      label="Montant (CFA)"
+                      rules={[
+                        { required: true, message: 'Veuillez entrer un montant' },
+                        { type: 'number', min: 0, message: 'Le montant doit être positif' }
+                      ]}
+                    >
+                      <InputNumber min={0} step={1} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                )}
 
                 <Col span={8}>
                   <Form.Item

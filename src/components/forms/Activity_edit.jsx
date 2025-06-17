@@ -307,9 +307,9 @@ class Activity_edit extends Component {
                 <Title level={5}>Participants ({row.userThatPaid?.length || 0})</Title>
                 <div style={{ marginTop: 8 }}>
                   {row.userThatPaid?.length > 0 ? (
-                    row.userThatPaid.map((user, index) => (
+                    row.userThatPaid.map((participation, index) => (
                       <Tag key={index} style={{ marginBottom: 8 }}>
-                        {user.firstname} {user.lastname}
+                        {participation.user.firstname} {participation.user.lastname}
                       </Tag>
                     ))
                   ) : (

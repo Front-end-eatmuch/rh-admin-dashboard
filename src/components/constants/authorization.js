@@ -20,7 +20,7 @@ import AdminCategory from "../menus/admin_category";
 // import notification_notification from "../menus/notification_support";
 
 // import SupportSupport from "../menus/notification_support";
-// import NotificationAds from "../menus/notification_ads";
+ import NotificationPush from "../menus/notification_push";
 // import CompanyRole from "../menus/comp_role";
 // import CompanyCompany from "../menus/comp_comp";
 // import CompanyPermission from "../menus/comp_permission";
@@ -33,7 +33,7 @@ import Support from "../menus/support";
 // import Session from "../menus/session";
 // import Booking from "../menus/booking";
 // import Template from "../menus/template";
-import NotificationPush from "../menus/notification_push";
+import NotificationUser from "../menus/notification_user";
 // import Discount from "../menus/discount";
 // import Zip from "../menus/zip";
 import CountryCountry from "../menus/country_country";
@@ -411,17 +411,17 @@ const list_menu = [
       //   url: "/main/notification/email",
       //   component: NotificationEmail
       // },
-      // {
-      //   value: "notification-ads",
-      //   title: "Annonces",
-      //   url: "/main/notification/ads",
-      //   component: NotificationAds
-      // },
       {
         value: "notification-push",
         title: "Push Message",
         url: "/main/notification/push",
         component: NotificationPush
+      },
+      {
+        value: "notification-user",
+        title: "Notifications utilisateurs",
+        url: "/main/notification/user",
+        component: NotificationUser
       }
     ]
   },

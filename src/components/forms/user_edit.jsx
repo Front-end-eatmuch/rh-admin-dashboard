@@ -214,7 +214,7 @@ class User_edit extends Component {
                     style={styles.select}
                   >
                     {roles
-                      .filter(role => role.name === "gestionnaire_activites")
+                      .filter(role => role.name === "gestion_actualites")
                       .map((role) => (
                         <Option key={role._id} value={role._id}>
                           {role.name}

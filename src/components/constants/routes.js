@@ -97,6 +97,16 @@ const get_user_bill = "admin/user/:userId";
 const get_one_bill = "get-one";
 // const delete_bill = "delete";
 
+// --------------------------Request Notification--------------------------
+const notification = "notification";
+const create_notification = "create";
+const update_notification = "update-notification";
+const get_all_notifications = "admin/all";
+const get_all_orphan_notifications = "admin/orphans";
+const get_user_notifications = "user";
+// const mark_read_notification = "mark-read";
+const delete_notification = "delete";
+
 
 
 
@@ -466,6 +476,14 @@ export {
   bill,
   get_all_bill,
   get_user_bill,
+  // --------------------------Request Notification--------------------------
+  notification,
+  create_notification,
+  update_notification,
+  get_all_notifications,
+  get_all_orphan_notifications,
+  get_user_notifications,
+  delete_notification,  
 
 
 

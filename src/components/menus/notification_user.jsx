@@ -20,18 +20,23 @@ import { connect } from "react-redux";
 import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
 
-import { ads, delete_ads, get_all_ads, update_ads } from "../constants/routes";
+import {
+  notification,
+  delete_notification,
+  get_all_notifications,
+  update_notification
+} from "../constants/routes";
 import { MakeRequestAsync } from "../functions/axios";
 import { openNotificationWithIcon } from "../functions/notification";
 import { GET, DELETE, UPDATE } from "../constants/request-type";
 import { service_api } from "../constants/url";
 
-import Ads_new from "../forms/ads_new";
-import Ads_edit from "../forms/ads_edit";
+import Push_new from "../forms/push_new";
+import Send_push from "../forms/send_push";
 import { decryptSingleData } from "../functions/cryptojs";
 const token = sessionStorage.getItem("auth_token");
 
-class NotificationAds extends Component {
+class NotificationBetweenUsers extends Component {
   state = {
     selectedRowKeys: [],
     searchText: "",
@@ -51,18 +56,23 @@ class NotificationAds extends Component {
     const request_details = {
       type: GET,
       url: service_api,
-      route: ads + "/" + get_all_ads,
+      route: notification + "/" + get_all_notifications,
       data: null,
       token: token
     };
 
     const response = await MakeRequestAsync(request_details)
-      .then((res) =>
-        this.setState({ load: false, data: decryptSingleData(res.data.ad) })
-      )
+      .then((res) => {
+        const data = decryptSingleData(res.data.data);
+        this.setState({
+          load: false,
+          data: data.notifications
+        });
+      })
       .catch((err) => {
         this.setState({ load: false });
-        return openNotificationWithIcon("error", err);
+        console.log(err);
+        return openNotificationWithIcon("error", `${err}`);
       });
   };
 
@@ -171,9 +181,10 @@ class NotificationAds extends Component {
     const request_details = {
       type: DELETE,
       url: service_api,
-      route: ads + "/" + delete_ads + "/" + id,
+      route: notification + "/" + delete_notification + "/" + id,
       token: token
     };
+
     const response = await MakeRequestAsync(request_details).catch((err) => {
       return openNotificationWithIcon("error", `${err.response.data}`);
     });
@@ -188,7 +199,7 @@ class NotificationAds extends Component {
     const request_details = {
       type: UPDATE,
       url: service_api,
-      route: ads + "/" + update_ads + "/" + id,
+      route: notification + "/" + update_notification + "/" + id,
       data: data,
       token: token
     };
@@ -203,16 +214,13 @@ class NotificationAds extends Component {
       {
         title: "Id",
         dataIndex: "_id",
-        // width: "20%",
         ...this.getColumnSearchProps("_id"),
         fixed: "left"
       },
       {
-        title: "titre",
-        dataIndex: "title",
-        // width: "20%",
-        ...this.getColumnSearchProps("title"),
-        // fixed: "left",
+        title: "Message",
+        dataIndex: "message",
+        ...this.getColumnSearchProps("message"),
         render: (text) => {
           return (
             <Tag color={"blue"} key={text}>
@@ -222,73 +230,25 @@ class NotificationAds extends Component {
         }
       },
       {
-        title: "description",
-        dataIndex: "description",
-        // width: "20%",
-        ...this.getColumnSearchProps("description"),
-        render: (text) => {
-          return (
-            <Tag color={"blue"} key={text}>
-              {text.slice(0, 100) + "..."}
-            </Tag>
-          );
-        }
-      },
-      {
-        title: "Lien attaché",
+        title: "Lien",
         dataIndex: "link",
-        // width: "20%",
-        render: (text) => {
-          return text === null || text.length === 0 ? (
-            "Aucun lien"
-          ) : (
-            <a href={text} target="blank_">
-              Lien attaché
-            </a>
-          );
-        }
+        ...this.getColumnSearchProps("link"),
+        render: (text) => text ? (
+          <Tag color={"green"} key={text}>
+            {text}
+          </Tag>
+        ) : (
+          <Tag color={"orange"}>Aucun lien</Tag>
+        )
       },
       {
-        title: "Image",
-        dataIndex: "cover",
-        // width: "20%",
-        render: (text) => {
-          return text === null || text.length === 0 ? (
-            "Aucune image"
-          ) : (
-            <a href={text} target="blank_">
-              Lien image
-            </a>
-          );
-        }
-      },
-      {
-        title: "Date & Type",
-        dataIndex: "period_start",
-        // width: "20%",
-        render: (text, record) => {
-          return (
-            <Tag color={"blue"} key={text}>
-              {"Depart: " + record.period_start} <br />
-              {"Fin: " + record.period_end} <br />
-              {"Type: " + record.ads_type}
-            </Tag>
-          );
-        }
-      },
-      {
-        title: "Actif",
-        dataIndex: "status",
-        render: (text) =>
-          text === 0 ? (
-            <Tag color={"green"} key={text}>
-              OUI
-            </Tag>
-          ) : (
-            <Tag color={"volcano"} key={text}>
-              NON
-            </Tag>
-          )
+        title: "Lu",
+        dataIndex: "read",
+        render: (read) => (
+          <Tag color={read ? "green" : "red"}>
+            {read ? "Oui" : "Non"}
+          </Tag>
+        )
       },
       {
         title: "Actions",
@@ -348,27 +308,16 @@ class NotificationAds extends Component {
     const MenuButton = (record) => (
       <Menu>
         <Menu.Item>
-          <Ads_edit row={record} />
+          <Send_push row={record} />
         </Menu.Item>
-        {record.status === 0 ? (
-          <Menu.Item>
-            <Link onClick={() => this.handleStatus(record._id, 1)}>
-              Verrouiller
-            </Link>
-          </Menu.Item>
-        ) : (
-          <Menu.Item>
-            <Link onClick={() => this.handleStatus(record._id, 0)}>
-              Autoriser
-            </Link>
-          </Menu.Item>
-        )}
         <Menu.Item>
           <Link onClick={() => this.handleDelete(record._id)}>Supprimer</Link>
         </Menu.Item>
       </Menu>
     );
+
     const { load, data, allowed, blocked, verified, overall } = this.state;
+
     return (
       <>
         <PageHeader
@@ -376,73 +325,12 @@ class NotificationAds extends Component {
             //  window.history.back()
           }}
           title="Notifications"
-          tags={<Tag color="blue">Liste des annonces</Tag>}
+          tags={<Tag color="blue">Liste des Notifications utilisateurs</Tag>}
           subTitle=""
-          extra={[
-            <Ads_new />,
-            <Button
-              key="2"
-              color="primary"
-              onClick={() =>
-                this.setState({
-                  allowed: false,
-                  blocked: false,
-                  verified: false,
-                  overall: true
-                })
-              }
-            >
-              Tout
-            </Button>,
-            <Button
-              key="2"
-              color="primary"
-              onClick={() =>
-                this.setState({
-                  allowed: true,
-                  blocked: false,
-                  overall: false
-                })
-              }
-            >
-              Actif
-            </Button>,
-            <Button
-              key="3"
-              color="danger"
-              onClick={() =>
-                this.setState({
-                  allowed: false,
-                  blocked: true,
-                  overall: false
-                })
-              }
-            >
-              Inactif
-            </Button>
-          ]}
+          // extra={[<Push_new />]}
         >
           <Row>
-            <Statistic
-              title="Actif"
-              value={
-                data.filter((res) => {
-                  return res.status === 0;
-                }).length
-              }
-            />
-            <Statistic
-              title="Inactif"
-              value={
-                data.filter((res) => {
-                  return res.status === 1;
-                }).length
-              }
-              style={{
-                margin: "0 32px"
-              }}
-            />
-            <Statistic title="Total" value={data?.length} />
+            <Statistic title="Total" value={data.length} />
           </Row>
           <Row>
             {load ? (
@@ -455,14 +343,7 @@ class NotificationAds extends Component {
                   // rowSelection={rowSelection}
                   // size="small"
                   columns={columns}
-                  dataSource={data.filter((res) => {
-                    if (allowed && !blocked && !overall)
-                      return res.status === 0;
-                    if (!allowed && blocked && !overall)
-                      return res.status === 1;
-
-                    return res;
-                  })}
+                  dataSource={data}
                 />
               </Col>
             )}
@@ -486,4 +367,4 @@ const mapDispatchStoreToProps = (dispatch) => {
 export default connect(
   mapStateToProps,
   mapDispatchStoreToProps
-)(NotificationAds);
+)(NotificationBetweenUsers);

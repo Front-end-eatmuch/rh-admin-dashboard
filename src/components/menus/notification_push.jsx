@@ -12,7 +12,9 @@ import {
   Table,
   Input,
   Space,
-  Spin
+  Spin,
+  Modal,
+  Typography
 } from "antd";
 import { Link } from "react-router-dom";
 import { connect } from "react-redux";
@@ -21,10 +23,12 @@ import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
 
 import {
-  push,
-  delete_push,
-  get_all_push,
-  update_push
+  notification,
+  create_notification,
+  update_notification,
+  delete_notification,
+  get_all_notifications,
+  get_all_orphan_notifications
 } from "../constants/routes";
 import { MakeRequestAsync } from "../functions/axios";
 import { openNotificationWithIcon } from "../functions/notification";
@@ -36,7 +40,7 @@ import Send_push from "../forms/send_push";
 import { decryptSingleData } from "../functions/cryptojs";
 const token = sessionStorage.getItem("auth_token");
 
-class NotificationAds extends Component {
+class NotificationPush extends Component {
   state = {
     selectedRowKeys: [],
     searchText: "",
@@ -45,7 +49,9 @@ class NotificationAds extends Component {
     data: [],
     overall: true,
     allowed: false,
-    blocked: false
+    blocked: false,
+    modalVisible: false,
+    selectedNotification: null
   };
 
   componentDidMount() {
@@ -56,27 +62,23 @@ class NotificationAds extends Component {
     const request_details = {
       type: GET,
       url: service_api,
-      route: push + "/" + get_all_push,
+      route: notification + "/" + get_all_orphan_notifications,
       data: null,
       token: token
     };
 
     const response = await MakeRequestAsync(request_details)
       .then((res) => {
+        const data = decryptSingleData(res.data.data);
         this.setState({
           load: false,
-          data: decryptSingleData(res.data.push)
+          data: data.notifications
         });
       })
       .catch((err) => {
         this.setState({ load: false });
-        return openNotificationWithIcon("error", `${err.response.data}`);
+        return openNotificationWithIcon("error", err);
       });
-  };
-
-  onSelectChange = (selectedRowKeys) => {
-    console.log("selectedRowKeys changed: ", selectedRowKeys);
-    this.setState({ selectedRowKeys });
   };
 
   getColumnSearchProps = (dataIndex) => ({
@@ -91,7 +93,7 @@ class NotificationAds extends Component {
           ref={(node) => {
             this.searchInput = node;
           }}
-          placeholder={`Search ${dataIndex}`}
+          placeholder={`Rechercher ${dataIndex}`}
           value={selectedKeys[0]}
           onChange={(e) =>
             setSelectedKeys(e.target.value ? [e.target.value] : [])
@@ -109,27 +111,14 @@ class NotificationAds extends Component {
             size="small"
             style={{ width: 90 }}
           >
-            Search
+            Rechercher
           </Button>
           <Button
             onClick={() => this.handleReset(clearFilters)}
             size="small"
             style={{ width: 90 }}
           >
-            Reset
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              confirm({ closeDropdown: false });
-              this.setState({
-                searchText: selectedKeys[0],
-                searchedColumn: dataIndex
-              });
-            }}
-          >
-            Filter
+            Réinitialiser
           </Button>
         </Space>
       </div>
@@ -179,7 +168,7 @@ class NotificationAds extends Component {
     const request_details = {
       type: DELETE,
       url: service_api,
-      route: push + "/" + delete_push + "/" + id,
+      route: notification + "/" + delete_notification + "/" + id,
       token: token
     };
 
@@ -190,21 +179,18 @@ class NotificationAds extends Component {
     return setTimeout(() => window.location.reload(), 1000);
   };
 
-  handleStatus = async (id, status) => {
-    const data = {
-      status: status
-    };
-    const request_details = {
-      type: UPDATE,
-      url: service_api,
-      route: push + "/" + update_push + "/" + id,
-      data: data,
-      token: token
-    };
-    const response = await MakeRequestAsync(request_details).catch((err) => {
-      return openNotificationWithIcon("error", `${err.response.data}`);
+  showModal = (record) => {
+    this.setState({
+      modalVisible: true,
+      selectedNotification: record
     });
-    return setTimeout(() => window.location.reload(), 1000);
+  };
+
+  handleModalClose = () => {
+    this.setState({
+      modalVisible: false,
+      selectedNotification: null
+    });
   };
 
   render() {
@@ -212,16 +198,13 @@ class NotificationAds extends Component {
       {
         title: "Id",
         dataIndex: "_id",
-        // width: "20%",
         ...this.getColumnSearchProps("_id"),
         fixed: "left"
       },
       {
-        title: "message",
+        title: "Message",
         dataIndex: "message",
-        // width: "20%",
         ...this.getColumnSearchProps("message"),
-        // fixed: "left",
         render: (text) => {
           return (
             <Tag color={"blue"} key={text}>
@@ -231,93 +214,45 @@ class NotificationAds extends Component {
         }
       },
       {
-        title: "icon",
-        dataIndex: "icon",
-        // width: "20%",
-        ...this.getColumnSearchProps("icon"),
-        // fixed: "left",
-        render: (text) => {
-          return (
-            <a href={text} target="_blank" rel="noreferrer">
-              <img
-                src={text}
-                alt="img"
-                style={{
-                  width: 50,
-                  height: 50
-                }}
-              />
-            </a>
-          );
-        }
+        title: "Lien",
+        dataIndex: "link",
+        ...this.getColumnSearchProps("link"),
+        render: (text) => text ? (
+          <Tag color={"green"} key={text}>
+            {text}
+          </Tag>
+        ) : (
+          <Tag color={"orange"}>Aucun lien</Tag>
+        )
+      },
+      {
+        title: "Lu",
+        dataIndex: "read",
+        render: (read) => (
+          <Tag color={read ? "green" : "red"}>
+            {read ? "Oui" : "Non"}
+          </Tag>
+        )
       },
       {
         title: "Actions",
         fixed: "right",
         render: (text, record) => (
           <div>
-            <Dropdown
-              overlay={MenuButton(record)}
-              placement="bottomCenter"
-              arrow
-            >
-              <Button>Options</Button>
-            </Dropdown>
+            <Space>
+              <Button type="primary" onClick={() => this.showModal(record)}>
+                Détails
+              </Button>
+              <Button type="danger" onClick={() => this.handleDelete(record._id)}>
+                Supprimer
+              </Button>
+            </Space>
           </div>
         )
       }
     ];
-    const { selectedRowKeys } = this.state;
-    const rowSelection = {
-      selectedRowKeys,
-      onChange: this.onSelectChange,
-      selections: [
-        Table.SELECTION_ALL,
-        Table.SELECTION_INVERT,
-        Table.SELECTION_NONE,
-        {
-          key: "odd",
-          text: "Select Odd Row",
-          onSelect: (changableRowKeys) => {
-            let newSelectedRowKeys = [];
-            newSelectedRowKeys = changableRowKeys.filter((key, index) => {
-              if (index % 2 !== 0) {
-                return false;
-              }
-              return true;
-            });
-            this.setState({ selectedRowKeys: newSelectedRowKeys });
-          }
-        },
-        {
-          key: "even",
-          text: "Select Even Row",
-          onSelect: (changableRowKeys) => {
-            let newSelectedRowKeys = [];
-            newSelectedRowKeys = changableRowKeys.filter((key, index) => {
-              if (index % 2 !== 0) {
-                return true;
-              }
-              return false;
-            });
-            this.setState({ selectedRowKeys: newSelectedRowKeys });
-          }
-        }
-      ]
-    };
 
-    const MenuButton = (record) => (
-      <Menu>
-        <Menu.Item>
-          <Send_push row={record} />
-        </Menu.Item>
-        <Menu.Item>
-          <Link onClick={() => this.handleDelete(record._id)}>Supprimer</Link>
-        </Menu.Item>
-      </Menu>
-    );
-
-    const { load, data, allowed, blocked, verified, overall } = this.state;
+    const { load, data, modalVisible, selectedNotification } = this.state;
 
     return (
       <>
@@ -326,12 +261,12 @@ class NotificationAds extends Component {
             //  window.history.back()
           }}
           title="Notifications"
-          tags={<Tag color="blue">Liste des push</Tag>}
+          tags={<Tag color="blue">Liste des notifications</Tag>}
           subTitle=""
           extra={[<Push_new />]}
         >
           <Row>
-            <Statistic title="Total" value={data.length} />
+            <Statistic title="Total" value={data?.length} />
           </Row>
           <Row>
             {load ? (
@@ -341,8 +276,6 @@ class NotificationAds extends Component {
             ) : (
               <Col span={24}>
                 <Table
-                  // rowSelection={rowSelection}
-                  // size="small"
                   columns={columns}
                   dataSource={data}
                 />
@@ -350,6 +283,48 @@ class NotificationAds extends Component {
             )}
           </Row>
         </PageHeader>
+
+        <Modal
+          title="Détails de la notification"
+          visible={modalVisible}
+          onCancel={this.handleModalClose}
+          footer={[
+            <Button key="close" onClick={this.handleModalClose}>
+              Fermer
+            </Button>
+          ]}
+          width={600}
+        >
+          {selectedNotification && (
+            <Descriptions column={1}>
+              <Descriptions.Item label="Message">
+                {selectedNotification.message}
+              </Descriptions.Item>
+              <Descriptions.Item label="Lien">
+                {selectedNotification.link ? (
+                  <a href={selectedNotification.link} target="_blank" rel="noopener noreferrer">
+                    {selectedNotification.link}
+                  </a>
+                ) : (
+                  "Aucun lien"
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Statut">
+                <Tag color={selectedNotification.read ? "green" : "red"}>
+                  {selectedNotification.read ? "Lu" : "Non lu"}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Date de création">
+                {new Date(selectedNotification.createdAt).toLocaleString()}
+              </Descriptions.Item>
+              {selectedNotification.updatedAt && (
+                <Descriptions.Item label="Dernière mise à jour">
+                  {new Date(selectedNotification.updatedAt).toLocaleString()}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          )}
+        </Modal>
       </>
     );
   }
@@ -368,4 +343,4 @@ const mapDispatchStoreToProps = (dispatch) => {
 export default connect(
   mapStateToProps,
   mapDispatchStoreToProps
-)(NotificationAds);
+)(NotificationPush);

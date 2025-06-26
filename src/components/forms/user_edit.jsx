@@ -74,6 +74,8 @@ class User_edit extends Component {
       return openNotificationWithIcon("error", `${err.response.data}`);
     });
 
+    console.log(response.data.roles)
+
     if (response?.data?.roles) {
       this.setState({ roles: response.data.roles });
     }
@@ -214,7 +216,7 @@ class User_edit extends Component {
                     style={styles.select}
                   >
                     {roles
-                      .filter(role => role.name === "gestion_actualites")
+                      .filter(role => role.permissions.length === 1 && role.permissions[0] === "gestion_actualites")
                       .map((role) => (
                         <Option key={role._id} value={role._id}>
                           {role.name}

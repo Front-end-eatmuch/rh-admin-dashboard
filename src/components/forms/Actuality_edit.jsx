@@ -74,7 +74,7 @@ class Actuality_edit extends Component {
 
             <Col span={12}>
               <Title level={5}>Catégorie</Title>
-              <Text>{row.category || "Aucune catégorie"}</Text>
+              <Text>{row.category?.name || "Aucune catégorie"}</Text>
             </Col>
 
             <Col span={12}>

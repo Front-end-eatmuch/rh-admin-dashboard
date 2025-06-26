@@ -285,7 +285,7 @@ class Actuality extends Component {
       {
         title: "Catégorie",
         dataIndex: "category",
-        render: (text) => text ? <Tag>{text}</Tag> : "Aucune catégorie"
+        render: (category) => category ? <Tag>{category.name}</Tag> : "Aucune catégorie"
       },
       {
         title: "Actif",
